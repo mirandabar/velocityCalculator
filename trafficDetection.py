@@ -86,7 +86,7 @@ def videoStats(video_path : Union[str,Path], output_dir : Union[str,Path]):
     cap.read() #First frame should be avoided because it can be corrupted, so we read it and discard it.
     ret, frame = cap.read()
     
-    saveFrame(ret, frame, output_dir)
+    #saveFrame(ret, frame, output_dir)
     
     cap.release()
 
