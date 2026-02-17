@@ -1,15 +1,20 @@
-import cv2
-import numpy as np
 import os
+import time
 import random
 from pathlib import Path
+from typing import Union
+
+os.environ['OPENCV_FFMPEG_LOGLEVEL'] = '-8'  # Delete error messages from ffmpeg in the terminal
+
+import numpy as np
 import csv
 import pandas as pd
 import matplotlib.pyplot as plt 
-import time
+
+import cv2
 from ultralytics import YOLO
 
-VIDEO_FOLDER = './dataset/video' 
+import readConfiguration
 
 def randomVideo(folder_path, extensions=['.mp4', '.avi', '.mov']):
     if not os.path.isdir(folder_path):
@@ -35,17 +40,32 @@ def randomVideo(folder_path, extensions=['.mp4', '.avi', '.mov']):
     print(f"Selected video: {selected_file}")
     return video_path
 
-def videoStats(video_path):
-    
-    if video_path is None:
+def saveFrame(ret, frame, output_dir):
+    if not ret:
+        print("Error: No frame to save.")
         return
 
-    print(f"\n--- Verificando o arquivo: {Path(video_path).name} ---")
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, f"frame_{time.time()}.png")
+    cv2.imwrite(output_path, frame)
+    print(f"Frame saved successfully at: {output_path}")
+
+def videoStats(video_path : Union[str,Path], output_dir : Union[str,Path]):
+
+    if not os.path.isfile(video_path):
+        print(f"Error: Video file '{video_path}' not found.")
+        return
+    
+    if output_dir is None or output_dir == '':
+        print("Error: Output directory is not specified.")
+        return
+
+    print(f"\n--- Reading: {Path(video_path).name} ---")
 
     cap = cv2.VideoCapture(video_path)
 
     if not cap.isOpened():
-        print("❌ ERRO: Não foi possível abrir o vídeo (verifique o formato/codec).")
+        print("Eror: Could not open video.")
         return
 
     # Captura as propriedades do vídeo
@@ -54,39 +74,24 @@ def videoStats(video_path):
     fps = cap.get(cv2.CAP_PROP_FPS)
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-    print(f"Dimensões (Largura x Altura): **{frame_width} x {frame_height}** pixels")
-    print(f"FPS (Frames por Segundo): **{fps:.2f}**")
-    print(f"Total de Quadros: {total_frames}")
+    print(f"Width x Height: **{frame_width} x {frame_height}** pixels")
+    print(f"FPS: **{fps:.2f}**")
+    print(f"Total Frames: {total_frames}")
     
-    # Leitura do primeiro quadro
+    cap.read() #First frame should be avoided because it can be corrupted, so we read it and discard it.
     ret, frame = cap.read()
     
-    # Leitura do segundo quadro
-    ret, second_frame = cap.read()
-
-    ret, third_frame = cap.read()
-    if ret:
-        print(f"✅ Primeiro quadro lido com sucesso! Formato: {frame.shape}")
-        
-        # Cria a pasta de saída e define o caminho do arquivo
-        output_dir = "frames_de_teste"
-        os.makedirs(output_dir, exist_ok=True)
-        
-        video_name = Path(video_path).stem
-        output_path = os.path.join(output_dir, f"{video_name}_primeiro_quadro.png")
-        
-        # Salva o frame
-        cv2.imwrite(output_path, second_frame)
-        print(f"🖼️ Quadro salvo com sucesso em: **{output_path}**")
-
-    else:
-        print("❌ ERRO: Não foi possível ler o primeiro quadro do vídeo.")
+    saveFrame(ret, frame, output_dir)
     
     cap.release()
-    print("------------------------------------------------")
-
 
 if __name__ == "__main__":
+    config_path = Path('configuration.yaml')
+    config = readConfiguration.readConfig(config_path=config_path)
+    
+    video_folder = readConfiguration.getVideoFolder(config)
+    output_frames_folder = readConfiguration.getOutputFramesFolder(config)
+
     #selected_video_path = randomVideo(VIDEO_FOLDER)
     selected_video_path = './dataset/video/cctv052x2004080616x00054.avi'  # Caminho fixo para teste
-    videoStats(selected_video_path)
+    videoStats(selected_video_path, output_frames_folder)

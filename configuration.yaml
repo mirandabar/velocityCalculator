@@ -1,0 +1,4 @@
+input:
+  video_folder: './dataset/video'
+output:
+  frames_folder: 'framesImages'
