@@ -46,7 +46,7 @@ def saveFrame(ret, frame, output_dir):
         return
 
     os.makedirs(output_dir, exist_ok=True)
-    output_path = os.path.join(output_dir, f"frame_{time.time()}.png")
+    output_path = os.path.join(output_dir, f"frame_{time.strftime('%Y%m%d_%H%M%S')}.png")
     cv2.imwrite(output_path, frame)
     print(f"Frame saved successfully at: {output_path}")
 
@@ -92,6 +92,10 @@ if __name__ == "__main__":
     video_folder = readConfiguration.getVideoFolder(config)
     output_frames_folder = readConfiguration.getOutputFramesFolder(config)
 
-    #selected_video_path = randomVideo(VIDEO_FOLDER)
-    selected_video_path = './dataset/video/cctv052x2004080616x00054.avi'  # Caminho fixo para teste
+    #selected_video_path = randomVideo(video_folder)
+    selected_video_path = './dataset/video/cctv052x2004080616x00054.avi' 
     videoStats(selected_video_path, output_frames_folder)
+
+    #TODO: ADD matriz homográfica para calcular la velocidad de los vehículos. 
+    # Para esto se necesitan puntos de referencia en el video
+    #  https://www.kaggle.com/code/mreisdc/traffic-detection#.Defini%C3%A7%C3%A3o-do-video
