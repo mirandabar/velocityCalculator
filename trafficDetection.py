@@ -14,7 +14,13 @@ import matplotlib.pyplot as plt
 import cv2
 from ultralytics import YOLO
 
+import threading
+
+#Project files
 import readConfiguration
+from frameWrapper   import FrameWrapper
+from frameQueue     import FrameQueue
+from frameDispacher import FrameDispatcher
 
 def randomVideo(folder_path, extensions=['.mp4', '.avi', '.mov']):
     if not os.path.isdir(folder_path):
@@ -32,8 +38,7 @@ def randomVideo(folder_path, extensions=['.mp4', '.avi', '.mov']):
         return None
 
     # Select a random video file
-    seconds = time.time()  # Get current time in seconds
-    random.seed(seconds)   # Seed the random number generator with the current time
+    random.seed(time.time())   # Seed the random number generator with the current time
     selected_file = random.choice(video_files)
     video_path = os.path.join(folder_path, selected_file)
     
@@ -65,7 +70,7 @@ def videoStats(video_path : Union[str,Path], output_dir : Union[str,Path]):
     cap = cv2.VideoCapture(video_path)
 
     if not cap.isOpened():
-        print("Eror: Could not open video.")
+        print("Error: Could not open video.")
         return
 
     # Captura as propriedades do vídeo
@@ -85,17 +90,38 @@ def videoStats(video_path : Union[str,Path], output_dir : Union[str,Path]):
     
     cap.release()
 
+def isValidConfiguration(*args) -> bool:
+    return all(arg is not None for arg in args)
+
 if __name__ == "__main__":
     config_path = Path('configuration.yaml')
     config = readConfiguration.readConfig(config_path=config_path)
     
     video_folder = readConfiguration.getVideoFolder(config)
     output_frames_folder = readConfiguration.getOutputFramesFolder(config)
+    max_queue_size = readConfiguration.getMaxQueueSize(config)
+
+    if not isValidConfiguration(video_folder, output_frames_folder, max_queue_size):
+        print("Error: Configuration is missing required fields. Please check the configuration file.")
+        exit(1)
 
     #selected_video_path = randomVideo(video_folder)
     selected_video_path = './dataset/video/cctv052x2004080616x00054.avi' 
     videoStats(selected_video_path, output_frames_folder)
 
-    #TODO: ADD matriz homográfica para calcular la velocidad de los vehículos. 
-    # Para esto se necesitan puntos de referencia en el video
-    #  https://www.kaggle.com/code/mreisdc/traffic-detection#.Defini%C3%A7%C3%A3o-do-video
+    queue     = FrameQueue(max_size=max_queue_size)
+    wrapper   = FrameWrapper(video_path=selected_video_path, queue=queue)
+    dispacher = FrameDispatcher(queue=queue)
+
+    #Se inicia un paralelizado
+    #Hilo 1: Lee el video y llena la cola de frames
+    producer_thread = threading.Thread(target=wrapper.readVideo)
+    #Hilo 2: Procesa los frames de la cola 
+    consumer_thread = threading.Thread(target=dispacher.processFrames)
+
+    producer_thread.start()
+    consumer_thread.start()
+
+    producer_thread.join()
+    consumer_thread.join()
+    

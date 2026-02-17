@@ -18,11 +18,18 @@ def getVideoFolder(config : dict) -> str:
         return config['input']['video_folder']
     else:
         print("Error: 'video_folder' not found in configuration.")
-        return ''
+        return None
     
 def getOutputFramesFolder(config : dict) -> str:
     if config and 'output' in config and 'frames_folder' in config['output']:
         return config['output']['frames_folder']
     else:
         print("Error: 'frames_folder' not found in configuration.")
-        return ''
+        return None
+    
+def getMaxQueueSize(config : dict) -> int:
+    if config and 'processing' in config and 'max_queue_size' in config['processing']:
+        return config['processing']['max_queue_size']
+    else:
+        print("Error: 'max_queue_size' not found in configuration.")
+        return None

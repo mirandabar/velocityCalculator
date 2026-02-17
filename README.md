@@ -21,3 +21,8 @@ sudo apt-get update && sudo apt-get install -y libgl1-mesa-glx libglib2.0-0` \
 `
 sudo apt-get install -y libsm6 libxext6 libxrender-dev libgomp1
 `
+
+5) Ejecutar proyecto
+`
+python3 trafficDetection.py 
+`
